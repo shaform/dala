@@ -164,6 +164,12 @@ class DalaGame(object):
 
         self._next_turn()
 
+    def is_central_position(self, position):
+        upper = DalaGame.size // 2
+        lower = upper - 1
+        r, c = position
+        return lower <= r <= upper and lower <= c <= upper
+
     def _capture(self, player, capture):
         self._board[capture[0]][capture[1]] = DalaGame.empty
 
@@ -249,12 +255,9 @@ class DalaGame(object):
             raise AlreadyOccupiedException(
                 'Position aleary occupied: ({}, {})'.format(r, c))
 
-        if initial_condition:
-            upper = DalaGame.size // 2
-            lower = upper - 1
-            if r > upper or r < lower or c > upper or c < lower:
-                raise CentralNotOccupiedException(
-                    'Central positions must be occupied first')
+        if initial_condition and not self.is_central_position(position):
+            raise CentralNotOccupiedException(
+                'Central positions must be occupied first')
 
     def _check_movable(self, player, source, destination):
         r, c = source
