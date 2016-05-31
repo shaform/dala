@@ -76,6 +76,9 @@ class DalaGame(object):
     def whos_turn(self):
         return self._turn
 
+    def next_turn(self):
+        return self._compute_next_turn(self._turn)
+
     def remains(self, player):
         return self._remains[player]
 
