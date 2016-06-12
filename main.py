@@ -18,6 +18,10 @@ class QuitException(Exception):
     pass
 
 
+class RestartException(Exception):
+    pass
+
+
 class Dala(object):
     def __init__(self, debug=False, headless=False):
         self.debug = debug
@@ -47,10 +51,10 @@ class Dala(object):
         while True:
             event = pygame.event.wait()
 
-            if self._is_quit_event(event):
-                raise QuitException()
+            self._process_restart(event)
+            self._process_quit(event)
 
-            elif self._is_mouse_up(event):
+            if self._is_mouse_up(event):
                 pos = pygame.mouse.get_pos()
                 position = self.display.get_board_position(pos)
 
@@ -87,10 +91,10 @@ class Dala(object):
             while True:
                 event = pygame.event.wait()
 
-                if self._is_quit_event(event):
-                    raise QuitException()
+                self._process_restart(event)
+                self._process_quit(event)
 
-                elif event.type == pygame.MOUSEMOTION:
+                if event.type == pygame.MOUSEMOTION:
                     pos = pygame.mouse.get_pos()
                     dest = self.display.get_board_position(pos)
                     self.display.board.update_destination_candidate(self.game,
@@ -150,10 +154,10 @@ class Dala(object):
         while True:
             event = pygame.event.wait()
 
-            if self._is_quit_event(event):
-                raise QuitException()
+            self._process_restart(event)
+            self._process_quit(event)
 
-            elif event.type == pygame.MOUSEMOTION:
+            if event.type == pygame.MOUSEMOTION:
                 pos = pygame.mouse.get_pos()
                 capture = self.display.get_board_position(pos)
                 self.display.board.update_capture_candidate(self.game, capture)
@@ -176,17 +180,30 @@ class Dala(object):
 
             self._update_display()
 
+    def _process_quit(self, event):
+        if self._is_quit_event(event):
+            raise QuitException()
+
+    def _process_restart(self, event):
+        if event.type == pygame.KEYUP and event.key == pygame.K_F5:
+            raise RestartException()
+
     def _is_quit_event(self, event):
         return event.type == pygame.QUIT or event.type == pygame.KEYUP and event.key == pygame.K_ESCAPE
 
 
 if __name__ == '__main__':
-    dala = Dala()
-    try:
-        dala.main()
+    while True:
+        dala = Dala()
+        try:
+            dala.main()
+            break
 
-    except QuitException:
-        pass
+        except QuitException:
+            break
 
-    except GameOverException as e:
-        print(e)
+        except RestartException:
+            pass
+
+        except GameOverException as e:
+            print(e)

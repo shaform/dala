@@ -10,7 +10,12 @@ class DalaGame(object):
 
     drop_mode, move_mode, end_mode = range(3)
 
-    def __init__(self, board=None, remains=None, lost=None, turn=None):
+    def __init__(self,
+                 board=None,
+                 remains=None,
+                 lost=None,
+                 turn=None,
+                 winner=None):
         if board is None:
             board = [[DalaGame.empty] * DalaGame.size
                      for _ in range(DalaGame.size)]
@@ -34,12 +39,14 @@ class DalaGame(object):
         self._remains = remains
         self._lost = lost
         self._turn = turn
+        self._winner = winner
 
     def copy(self):
         return DalaGame(board=self._board,
                         remains=self._remains,
                         lost=self._lost,
-                        turn=self._turn)
+                        turn=self._turn,
+                        winner=self._winner)
 
     def __eq__(self, other):
         if isinstance(other, DalaGame):
@@ -97,6 +104,9 @@ class DalaGame(object):
             return DalaGame.move_mode
 
     def winner(self):
+        if self._winner is not None:
+            return self._winner
+
         for i in range(2):
             if self._lost[i] >= DalaGame.lost_condition:
                 return self._compute_next_turn(i)
@@ -188,6 +198,11 @@ class DalaGame(object):
         else:
             self._turn = next_turn
 
+        if self.game_mode == DalaGame.move_mode:
+            self._check_immovable()
+
+        return self._turn
+
     def _is_move_capture(self, player, source, destination):
         if self._is_drop_capture(player, destination):
             return True
@@ -218,6 +233,19 @@ class DalaGame(object):
             return left + right + 1 == 3
 
         return check_capture(row, c) or check_capture(col, r)
+
+    def _check_immovable(self, player=None):
+        if player is None:
+            player = self.whos_turn()
+
+        for r in range(DalaGame.size):
+            for c in range(DalaGame.size):
+                if self._board[r][c] == player and self._check_movable((r, c)):
+                    return
+
+        winner = self._compute_next_turn(player)
+        self._winner = winner
+        raise GameOverException('player {} wins!'.format(winner))
 
     def _check_turn(self, player):
         if player != self._turn or player not in (0, 1):

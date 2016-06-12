@@ -5,16 +5,23 @@ import pygame
 
 from game import DalaGame
 
-COLOR_BLACK = (0, 0, 0)
-COLOR_WHITE = (255, 255, 255)
-COLOR_YELLOW = (255, 250, 105)
-COLOR_GREEN = (0, 240, 0)
-COLOR_LITE_BLACK = (40, 40, 40)
-COLOR_LITE_WHITE = (215, 215, 215)
-COLOR_BACK = (213, 165, 77)
-COLOR_WALL = (109, 71, 0)
-COLOR_TITLE = COLOR_WHITE
-COLOR_GAME_BACK = COLOR_BLACK
+
+class Colors(object):
+    black = (0, 0, 0)
+    white = (255, 255, 255)
+    yellow = (255, 250, 105)
+    green = (0, 240, 0)
+    lite_black = (40, 40, 40)
+    lite_white = (215, 215, 215)
+    board_background = (213, 165, 77)
+    board_wall = (109, 71, 0)
+    game_title = white
+    game_background = black
+
+    piece_colors = [black, white]
+    drop_candidate_colors = [lite_black, lite_white]
+    capture_candidate_colors = [yellow, yellow]
+    source_candidate_colors = [green, green]
 
 
 class Display(object):
@@ -23,13 +30,14 @@ class Display(object):
 
     def __init__(self, title, clock):
         self.surface = pygame.display.set_mode((600, 400))
+        self.title = title
 
         pygame.display.set_caption(title)
 
         self.clock = clock
         self.board = Board()
 
-        self.surface.fill(COLOR_GAME_BACK)
+        self.surface.fill(Colors.game_background)
         pygame.display.update()
 
     def get_board_position(self, coordinate):
@@ -42,7 +50,7 @@ class Display(object):
             return None
 
     def display_opening(self):
-        title = Title()
+        title = Title(self.title)
         title.draw(self.surface, clock=self.clock)
 
     def draw_board(self, dala_game):
@@ -50,9 +58,23 @@ class Display(object):
         self.board.draw(self.surface, (Display.board_x, Display.board_y))
 
     def update(self, dala_game):
-        self.board.update(dala_game)
-        self.board.draw(self.surface, (Display.board_x, Display.board_y))
+        self.draw_board(dala_game)
         pygame.display.update()
+
+
+class RemainPieces(object):
+    piece_size = 10
+    margin_size = 2
+    width = (piece_size + margin_size) * DalaGame.num_of_pieces
+    height = piece_size * 2 + margin_size
+
+    def __init__(self):
+        self.surface = pygame.Surface((RemainPieces.width, RemainPieces.height
+                                       )).convert()
+
+    def update(self, dala_game):
+        self.surface.fill(Colors.game_background)
+        pygame.draw.circle(self.surface, color, (x, y), radius)
 
 
 class Title(object):
@@ -62,7 +84,8 @@ class Title(object):
 
     def __init__(self, title='Dala'):
         font = pygame.font.Font('freesansbold.ttf', Title.font_size)
-        self.title = font.render(title, True, COLOR_TITLE, COLOR_GAME_BACK)
+        self.title = font.render(title, True, Colors.game_title,
+                                 Colors.game_background)
 
     def draw(self, surface, clock, fps=40):
         rect = self.title.get_rect()
@@ -71,7 +94,7 @@ class Title(object):
         # fade in
         for i in range(0, 255, 20):
             self.title.set_alpha(i)
-            surface.fill(COLOR_GAME_BACK)
+            surface.fill(Colors.game_background)
             surface.blit(self.title, rect)
             pygame.display.update()
             clock.tick(fps)
@@ -81,12 +104,12 @@ class Title(object):
         # fade out
         for i in range(240, 20, -20):
             self.title.set_alpha(i)
-            surface.fill(COLOR_GAME_BACK)
+            surface.fill(Colors.game_background)
             surface.blit(self.title, rect)
             pygame.display.update()
             clock.tick(fps)
 
-        surface.fill(COLOR_GAME_BACK)
+        surface.fill(Colors.game_background)
         pygame.display.update()
         clock.tick(fps)
 
@@ -96,10 +119,6 @@ class Board(object):
     wall_size = 2
     size = DalaGame.size * (position_size + wall_size) + wall_size
     step_size = position_size + wall_size
-    piece_colors = [COLOR_BLACK, COLOR_WHITE]
-    drop_candidate_colors = [COLOR_LITE_BLACK, COLOR_LITE_WHITE]
-    capture_candidate_color = COLOR_YELLOW
-    source_candidate_color = COLOR_GREEN
 
     def __init__(self):
         self.surface = pygame.Surface((Board.size, Board.size)).convert()
@@ -188,31 +207,36 @@ class Board(object):
             if dala_game._board[r][c] == DalaGame.empty:
                 self._draw_a_piece(
                     position,
-                    Board.drop_candidate_colors[dala_game.whos_turn()])
+                    Colors.drop_candidate_colors[dala_game.whos_turn()])
 
         position = self.capture_candidate
         if position is not None:
             r, c = position
             if dala_game._board[r][c] == dala_game.next_turn():
-                self._draw_a_piece(position, Board.capture_candidate_color)
+                self._draw_a_piece(
+                    position,
+                    Colors.capture_candidate_colors[dala_game.next_turn()])
 
         position = self.source_candidate
         if position is not None:
             r, c = position
             if dala_game._board[r][c] == dala_game.whos_turn():
-                self._draw_a_piece(position, Board.source_candidate_color)
+                self._draw_a_piece(
+                    position,
+                    Colors.source_candidate_colors[dala_game.whos_turn()])
 
     def _draw_pieces(self, board):
         for r in range(DalaGame.size):
             for c in range(DalaGame.size):
                 if board[r][c] != DalaGame.empty:
-                    self._draw_a_piece((r, c), Board.piece_colors[board[r][c]])
+                    self._draw_a_piece(
+                        (r, c), Colors.piece_colors[board[r][c]])
 
     def _draw_background(self):
-        self.surface.fill(COLOR_BACK)
+        self.surface.fill(Colors.board_background)
 
     def _draw_grid(self, board):
-        color = COLOR_WALL
+        color = Colors.board_wall
 
         pygame.draw.rect(self.surface, color, (0, 0, Board.size, Board.size),
                          Board.wall_size)
